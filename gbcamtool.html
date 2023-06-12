@@ -66,7 +66,7 @@ function photoToImageData(savedata, ctx, photo_index)
 	var w = 128;
 	var h = 112;
 	var w_tiles = w >> 3;
-	var h_tiles = h >> 3;
+	var h_tiles = h >> 3; 
 	var imagedata = ctx.createImageData(w,h);
 	var val;
 	var tdata;
@@ -92,10 +92,10 @@ function photoToImageData(savedata, ctx, photo_index)
 				}
 
 				X = x * 8 + i;
-				imagedata.data[(y*w*4)+(X*4)+0] = palette[val]['red'];
-				imagedata.data[(y*w*4)+(X*4)+1] = palette[val]['green'];
-				imagedata.data[(y*w*4)+(X*4)+2] = palette[val]['blue'];
-				imagedata.data[(y*w*4)+(X*4)+3] = 0xff;
+				imagedata.data[4*((y*w)+X)+0] = palette[val]['red'];
+				imagedata.data[4*((y*w)+X)+1] = palette[val]['green'];
+				imagedata.data[4*((y*w)+X)+2] = palette[val]['blue'];
+				imagedata.data[4*((y*w)+X)+3] = 0xff;
 			}
 		}
 	}
@@ -129,10 +129,10 @@ function displayContents(savedata)
 {
 
 	var photo;
-
+	
 	for (photo = 0; photo < 30; photo++) {
 		var canvas = document.getElementById("photo" + photo);
-		var ctx = canvas.getContext("2d");
+		var ctx = canvas.getContext("2d",{willReadFrequently: true});
 		imgdata = photoToImageData(new Uint8Array(savedata), ctx, photo);
 		ctx.putImageData(imgdata,0,0);
 	}
@@ -146,10 +146,36 @@ function loadSaveFile()
 
 	reader.onload = function(e) {
 		var contents = e.target.result;
-		displayContents(contents)
+		displayContents(contents);
+		document.getElementById("downloadbtn").disabled = false;
 	};
 
 	reader.readAsArrayBuffer(file);
+}
+
+function downloadAll()
+{
+	const W=4;
+	var photo;
+	var big_canvas = document.createElement("canvas");
+	big_canvas.width = 128*W;
+	big_canvas.height = 112*Math.ceil(30/W);
+	var big_ctx = big_canvas.getContext("2d");
+	
+	for (photo = 0; photo < 30; photo++) {
+		var canvas = document.getElementById("photo" + photo);
+		var ctx = canvas.getContext("2d",{willReadFrequently: true});
+		imgdata = ctx.getImageData(0,0,128,112);
+		big_ctx.putImageData(imgdata,(photo%W)*128,Math.floor(photo/W)*112);
+	}
+	
+	a_temp = document.createElement("a");
+	a_temp.setAttribute("download","");
+	a_temp.href = big_canvas.toDataURL("image/png");
+
+	a_temp.click();
+	//TODO How should the H/W size choice be implemented? Window size? Static 5x6? Two textboxes you type in? Have it tied to the browser windows size, the same way the canvas elements are? But problem: the canvas elements rearrange themselves without any code telling them to do so: I don't think our canvas will be able to do that, unless you have some way of getting the bigCanvas to autoresize, and calculating the width/height from that.
+	//Even then, since there's a separator between the canvas elements, the dimensions of the downloaded image will not be the same as what's shown in the window.
 }
 
 </script>
@@ -183,8 +209,11 @@ Color 4: <input type="text" id="color3" value="#000000" onchange="loadSaveFile()
 
 <h2>Photos</h2>
 
-To save a particular photo, right-click and select Save Image As... (or equivalent)<br>
+<input type="button" id="downloadbtn" onClick="downloadAll()" disabled value="Download All">
 <br>
+<br>
+To save a particular photo, right-click and select Save Image As... (or equivalent)<br>
+
 
 <canvas id="photo0" width="128" height="112">
 Fallback content, in case the browser does not support Canvas.
