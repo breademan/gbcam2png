@@ -72,6 +72,7 @@ static void printHelp(void)
 	printf("  -l              List photos in save file\n");
 	printf("  -a              Also export deleted photos\n");
 	printf("  -s              Export/display small photos (32x32) intead of large photos (128x112)\n");
+	printf("  -c              Specify color palette in hexadecimal (AAAAAABBBBBBCCCCCCDDDDD)\n");
 	printf("  -v              Be verbose\n");
 	printf("\n\n");
 	printf("Examples:\n");
@@ -101,6 +102,7 @@ int main(int argc, char **argv)
 	int arg_image_index = 0;
 	const char *arg_output_filename = NULL;
 	const char *arg_basename = NULL;
+	char *arg_color = NULL;
 	int arg_display_terminal = 0;
 	int arg_list_photos = 0;
 	int arg_include_deleted = 0;
@@ -109,7 +111,7 @@ int main(int argc, char **argv)
 	int arg_use_gameface = 0;
 	int i;
 
-	while ((res = getopt(argc, argv, "hi:o:b:dlavsg")) != -1) {
+	while ((res = getopt(argc, argv, "hi:o:b:dlavsgc:")) != -1) {
 		switch (res)
 		{
 			case 'h':
@@ -142,6 +144,9 @@ int main(int argc, char **argv)
 			case 'g':
 				arg_use_gameface = 1;
 				break;
+			case 'c':
+				arg_color = optarg;
+				break;
 			default:
 				fprintf(stderr, "Unknown option. Try -h\n");
 				return 1;
@@ -162,6 +167,11 @@ int main(int argc, char **argv)
 	}
 	if (arg_use_small_photos && arg_use_gameface) {
 		fprintf(stderr, "-s and -g cannot be used together. The gameface photo does not have a small version.\n");
+		return 1;
+	}
+
+	if(arg_color && strlen(arg_color) != 24 && strlen(arg_color) != 0){
+		fprintf(stderr, "-c must have color specified with the 24-character format AAAAAABBBBBBCCCCCCDDDDDD .\n");
 		return 1;
 	}
 
@@ -216,7 +226,7 @@ int main(int argc, char **argv)
 						printf("Writing file %s\n", tmpfilename);
 					}
 
-					gbphoto_writepng(&photo, tmpfilename, arg_use_small_photos);
+					gbphoto_writepng(&photo, tmpfilename, arg_use_small_photos, arg_color);
 				} else {
 					if (arg_verbose) {
 						printf("Skipping deleted photo %d\n", i);
@@ -248,7 +258,7 @@ int main(int argc, char **argv)
 			outputPhotoToTerminal(&photo, arg_use_small_photos);
 		}
 		if (arg_output_filename) {
-			gbphoto_writepng(&photo, arg_output_filename, arg_use_small_photos);
+			gbphoto_writepng(&photo, arg_output_filename, arg_use_small_photos, arg_color);
 		}
 	}
 

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <setjmp.h>
 #include <string.h>
 #include "png.h"
@@ -18,29 +19,50 @@ static void writepng_error_handler(png_structp png_ptr, png_const_charp msg)
 	longjmp(jmpbuf, 1);
 }
 
-int gbphoto_gameface_writepng(const struct gb_ram_header *header, const char *filename)
+int gbphoto_gameface_writepng(const struct gb_ram_header *header, const char *filename, char * color_str)
 {
 	struct gb_photo photo;
 
 	// Convert the large photo from the header to someting gbphoto_writepng accepts.
 	memcpy(photo.large, header->gameface, sizeof(header->gameface));
 
-	return gbphoto_writepng(&photo, filename, 0);
+	return gbphoto_writepng(&photo, filename, 0, color_str);
 }
 
-int gbphoto_writepng(const struct gb_photo *photo, const char *filename, int small_photo)
+void parse_color_str(char * color_str, png_color * palette) {
+	
+	int currentcolor = 0;
+	
+	if(strlen(color_str)!=24) return;
+	
+	for (int i = 4; i>0; i--){
+		
+		int current_start_index = 6*(i-1);
+		currentcolor = strtoul(&color_str[current_start_index],NULL,16);
+		palette[i-1].red = (currentcolor>>16) & 0xFF; //3rd byte
+		palette[i-1].green = (currentcolor>>8) & 0xFF; //2nd byte
+		palette[i-1].blue = (currentcolor) & 0xFF; //1st byte
+		color_str[current_start_index]='\0';
+	}
+	return;
+}
+
+int gbphoto_writepng(const struct gb_photo *photo, const char *filename, int small_photo, char * color_str)
 {
 	png_structp  png_ptr;
 	png_infop  info_ptr;
 	int color_type = PNG_COLOR_TYPE_PALETTE;
 	int w = small_photo ? 32 : 128;
 	int h = small_photo ? 32 : 112;
-	png_color palette[4] = {
+	static png_color palette[4] = {
 		{ .red = 0xFF, .green = 0xFF, .blue = 0xFF },
 		{ .red = 0xAA, .green = 0xAA, .blue = 0xAA },
 		{ .red = 0x55, .green = 0x55, .blue = 0x55 },
 		{ .red = 0, .green = 0, .blue = 0 }
 	};
+	if (color_str){
+		parse_color_str(color_str, palette);
+	}
 	uint8_t rowdata[w];
 	int w_tiles = w / 8;
 	int h_tiles = h / 8;
