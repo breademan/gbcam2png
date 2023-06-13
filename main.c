@@ -72,6 +72,7 @@ static void printHelp(void)
 	printf("  -l              List photos in save file\n");
 	printf("  -a              Also export deleted photos\n");
 	printf("  -s              Export/display small photos (32x32) intead of large photos (128x112)\n");
+	printf("  -w              Export photo from viewfinder working area of the cart\n");
 	printf("  -v              Be verbose\n");
 	printf("\n\n");
 	printf("Examples:\n");
@@ -107,9 +108,10 @@ int main(int argc, char **argv)
 	int arg_verbose = 0;
 	int arg_use_small_photos = 0;
 	int arg_use_gameface = 0;
+	int arg_work = 0;
 	int i;
 
-	while ((res = getopt(argc, argv, "hi:o:b:dlavsg")) != -1) {
+	while ((res = getopt(argc, argv, "hi:o:b:dlavsgw")) != -1) {
 		switch (res)
 		{
 			case 'h':
@@ -142,6 +144,9 @@ int main(int argc, char **argv)
 			case 'g':
 				arg_use_gameface = 1;
 				break;
+			case 'w':
+				arg_work = 1;
+				break;
 			default:
 				fprintf(stderr, "Unknown option. Try -h\n");
 				return 1;
@@ -164,6 +169,10 @@ int main(int argc, char **argv)
 		fprintf(stderr, "-s and -g cannot be used together. The gameface photo does not have a small version.\n");
 		return 1;
 	}
+	if ((arg_use_small_photos || arg_use_gameface || arg_image_index || arg_basename || arg_list_photos) && arg_work) {
+		fprintf(stderr, "-s, -g, -i, -b, or -l cannot be used with -w.\n");
+		return 1;
+	}
 
 	fptr = fopen(input_save_file, "rb");
 	if (!fptr) {
@@ -179,7 +188,7 @@ int main(int argc, char **argv)
 	if (arg_list_photos || arg_basename) {
 
 		for (i=0; i<30; i++) {
-			res = fseek(fptr, gbphoto_getOffset(i), SEEK_SET);
+			res = fseek(fptr, gbphoto_getOffset(i, arg_work), SEEK_SET);
 			if (res) {
 				perror("fseek");
 				fclose(fptr);
@@ -216,7 +225,7 @@ int main(int argc, char **argv)
 						printf("Writing file %s\n", tmpfilename);
 					}
 
-					gbphoto_writepng(&photo, tmpfilename, arg_use_small_photos);
+					gbphoto_writepng(&photo, tmpfilename, arg_use_small_photos, arg_work);
 				} else {
 					if (arg_verbose) {
 						printf("Skipping deleted photo %d\n", i);
@@ -232,7 +241,7 @@ int main(int argc, char **argv)
 			// in the header.
 			memcpy(photo.large, header.gameface, sizeof(header.gameface));
 		} else {
-			res = fseek(fptr, gbphoto_getOffset(arg_image_index), SEEK_SET);
+			res = fseek(fptr, gbphoto_getOffset(arg_image_index, arg_work), SEEK_SET);
 			if (res) {
 				perror("fseek");
 				fclose(fptr);
@@ -248,7 +257,7 @@ int main(int argc, char **argv)
 			outputPhotoToTerminal(&photo, arg_use_small_photos);
 		}
 		if (arg_output_filename) {
-			gbphoto_writepng(&photo, arg_output_filename, arg_use_small_photos);
+			gbphoto_writepng(&photo, arg_output_filename, arg_use_small_photos, arg_work);
 		}
 	}
 

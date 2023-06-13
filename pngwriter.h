@@ -4,6 +4,6 @@
 #include "gbphoto.h"
 
 int gbphoto_gameface_writepng(const struct gb_ram_header *header, const char *filename);
-int gbphoto_writepng(const struct gb_photo *photo, const char *filename, int small_photo);
+int gbphoto_writepng(const struct gb_photo *photo, const char *filename, int small_photo, int arg_work);
 
 #endif // _pngwriter_h__

@@ -25,16 +25,17 @@ int gbphoto_gameface_writepng(const struct gb_ram_header *header, const char *fi
 	// Convert the large photo from the header to someting gbphoto_writepng accepts.
 	memcpy(photo.large, header->gameface, sizeof(header->gameface));
 
-	return gbphoto_writepng(&photo, filename, 0);
+	return gbphoto_writepng(&photo, filename, 0, 0);
 }
 
-int gbphoto_writepng(const struct gb_photo *photo, const char *filename, int small_photo)
+int gbphoto_writepng(const struct gb_photo *photo, const char *filename, int small_photo, int arg_work)
 {
 	png_structp  png_ptr;
 	png_infop  info_ptr;
 	int color_type = PNG_COLOR_TYPE_PALETTE;
 	int w = small_photo ? 32 : 128;
 	int h = small_photo ? 32 : 112;
+	if(arg_work) h = 128;
 	png_color palette[4] = {
 		{ .red = 0xFF, .green = 0xFF, .blue = 0xFF },
 		{ .red = 0xAA, .green = 0xAA, .blue = 0xAA },
