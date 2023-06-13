@@ -36,25 +36,15 @@ int gbphoto_read(FILE *fptr, struct gb_photo *dstphoto)
 		perror("fread");
 		return -1;
 	}
-
-	res = fread(dstphoto->small, sizeof(dstphoto->small), 1, fptr);
-	if (res != 1) {
-		perror("fread");
-		return -1;
-	}
-
-	res = fread(dstphoto->info, sizeof(dstphoto->info), 1, fptr);
-	if (res != 1) {
-		perror("fread");
-		return -1;
-	}
+	dstphoto->small = &(dstphoto->large[0+GB_PHOTO_LARGE_SIZE]);
+	dstphoto->info = &(dstphoto->large[0+GB_PHOTO_LARGE_SIZE+GB_PHOTO_SMALL_SIZE]);
 
 	return 0;
 }
 
-int gbphoto_getOffset(int photo_id)
+int gbphoto_getOffset(int photo_id, int arg_work)
 {
-	return GB_FIRST_PHOTO_OFFSET + photo_id * GB_PHOTO_SIZE;
+	return arg_work ? GB_WORKING_PHOTO_OFFSET : GB_FIRST_PHOTO_OFFSET + photo_id * GB_PHOTO_SIZE;
 }
 
 int gbphoto_isActive(const struct gb_ram_header *header, int index, int *logical_number)
